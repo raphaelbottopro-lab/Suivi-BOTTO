@@ -2,15 +2,16 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Budget Botto">
 <title>Budget Botto</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root{
-  --bg1:#ffffff;--bg2:#f2f2f7;--bg3:#f2f2f7;
+  --bg1:#fff;--bg2:#f2f2f7;--bg3:#f2f2f7;
   --tx1:#1c1c1e;--tx2:#8e8e93;
   --bd1:#e5e5ea;--bd2:#c7c7cc;
   --r1:12px;--r2:8px;
@@ -19,7 +20,7 @@
 @media(prefers-color-scheme:dark){
   :root{--bg1:#1c1c1e;--bg2:#2c2c2e;--bg3:#000;--tx1:#fff;--tx2:#8e8e93;--bd1:#38383a;--bd2:#48484a;}
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:pan-x pan-y}
 body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + env(safe-area-inset-bottom));padding-top:env(safe-area-inset-top)}
 .app{max-width:430px;margin:0 auto}
 .nav{display:flex;background:var(--bg1);border-top:.5px solid var(--bd1);position:fixed;bottom:0;left:0;right:0;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
@@ -90,6 +91,7 @@ body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + en
 .chip.on{background:#185FA5;color:#fff;border-color:#185FA5}
 .sbtn{width:100%;padding:14px;border-radius:var(--r1);border:none;background:#185FA5;color:#fff;font-size:16px;font-weight:500;cursor:pointer;margin-top:6px;font-family:var(--font)}
 .stl{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px;padding:0 2px}
+/* Patrimoine */
 .pt{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd1);padding:18px;margin-bottom:14px;text-align:center}
 .ptl{font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
 .ptv{font-size:30px;font-weight:500;color:var(--tx1)}
@@ -103,39 +105,67 @@ body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + en
 .pb{font-size:11px;color:var(--tx2)}
 .pv{font-size:13px;font-weight:500;white-space:nowrap}
 .pe{font-size:11px;margin-left:4px}
+/* Calendrier */
 .cg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 0 8px}
-.cm{padding:11px 6px;border-radius:var(--r2);border:.5px solid var(--bd1);background:var(--bg2);text-align:center;cursor:pointer;font-size:13px;color:var(--tx1)}
+.cm{padding:11px 6px;border-radius:var(--r2);border:.5px solid var(--bd1);background:var(--bg2);text-align:center;cursor:pointer;font-size:13px;color:var(--tx1);position:relative}
 .cm.on{background:#185FA5;color:#fff;border-color:#185FA5;font-weight:500}
+.cm.closed{opacity:.6}
+.snap-dot{width:5px;height:5px;border-radius:50%;position:absolute;top:4px;right:4px}
 .cy{font-size:14px;font-weight:500;color:var(--tx1);margin:12px 0 6px}
-.dc{border-radius:var(--r2);padding:10px 13px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+/* Bannieres */
+.dc{border-radius:var(--r2);padding:10px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
 .dc.up{background:#E1F5EE}.dc.down{background:#FAECE7}.dc.flat{background:var(--bg2)}
 .dl{font-size:12px;flex:1}
 .dl.up{color:#0F6E56}.dl.down{color:#993C1D}.dl.flat{color:var(--tx2)}
 .dv{font-size:14px;font-weight:500}
 .dv.up{color:#1D9E75}.dv.down{color:#D85A30}.dv.flat{color:var(--tx2)}
-.nb-banner{background:var(--bg2);border-radius:var(--r2);padding:10px 13px;margin-bottom:10px;font-size:12px;color:var(--tx2);text-align:center}
+.nb-banner{background:var(--bg2);border-radius:var(--r2);padding:10px 13px;margin-bottom:10px;font-size:12px;color:var(--tx2);text-align:center;overflow:hidden;max-height:60px;opacity:1;transition:max-height .35s ease,opacity .25s ease,margin .35s ease,padding .35s ease}
+.nb-banner.hidden{max-height:0;opacity:0;margin-bottom:0;padding-top:0;padding-bottom:0}
+.ro-banner{background:#FFF8E6;border-radius:var(--r2);padding:8px 13px;margin-bottom:10px;font-size:12px;color:#854F0B;display:flex;align-items:center;gap:6px;justify-content:center}
+.snap-btn{width:100%;padding:12px;border-radius:var(--r1);border:none;background:#1D9E75;color:#fff;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font)}
+.snap-saved{background:#E1F5EE;border-radius:var(--r2);padding:8px 13px;margin-bottom:10px;font-size:12px;color:#0F6E56;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px}
+.clore-btn{width:100%;padding:12px;border-radius:var(--r1);border:1.5px solid #D85A30;background:transparent;color:#D85A30;font-size:14px;font-weight:500;cursor:pointer;margin-top:4px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font)}
+.creer-btn{width:100%;padding:12px;border-radius:var(--r1);border:none;background:#185FA5;color:#fff;font-size:14px;font-weight:500;cursor:pointer;margin-top:4px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font)}
+.legend{display:flex;gap:12px;margin-top:12px;font-size:11px;color:var(--tx2);flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:5px}
+.leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.chart-card{background:var(--bg1);border-radius:var(--r1);border:.5px solid var(--bd1);padding:16px;margin-bottom:10px}
+.tot-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:.5px solid var(--bd1);margin-top:12px;font-size:12px}
 .er{display:flex;gap:8px;margin-top:12px}
 .eb{flex:1;padding:12px;border-radius:var(--r1);font-size:13px;cursor:pointer;font-family:var(--font)}
 </style>
 </head>
 <body>
 <div class="app">
+  <!-- BUDGET -->
   <div class="scr on" id="scr-budget">
     <div class="mhdr">
       <button class="mnav" id="bpm" onclick="chgMonth(-1)"><i class="ti ti-chevron-left"></i></button>
-      <div class="mtitle" id="mdisp">Mai 2026</div>
-      <button class="mnav" onclick="chgMonth(1)"><i class="ti ti-chevron-right"></i></button>
+      <div class="mtitle" id="mdisp" onclick="openBudgetCal()">Mai 2026 <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i></div>
+      <button class="mnav" id="bnm" onclick="chgMonth(1)"><i class="ti ti-chevron-right"></i></button>
     </div>
-    <div id="nmb"></div>
+    <div class="nb-banner hidden" id="nmb"></div>
+    <div id="rob"></div>
     <div class="sgrid">
       <div class="scard"><div class="slbl">Revenus</div><div class="sval g" id="trev">0 €</div></div>
       <div class="scard"><div class="slbl">Dépenses</div><div class="sval r" id="tdep">0 €</div></div>
-      <div class="scard"><div class="slbl">Solde</div><div class="sval b" id="tsol">0 €</div></div>
+      <div class="scard"><div class="slbl">Solde</div><div class="sval" id="tsol">0 €</div></div>
       <div class="scard"><div class="slbl">Épargne</div><div class="sval b" id="tepa">0 €</div></div>
     </div>
     <div id="bcats"></div>
+    <div id="bact"></div>
+    <!-- Graphique budget -->
+    <div class="stl" style="margin-top:8px">Répartition du budget</div>
+    <div class="chart-card">
+      <div style="position:relative;width:100%;height:220px">
+        <canvas id="budgetPie" role="img" aria-label="Répartition du budget mensuel">Répartition budget</canvas>
+      </div>
+      <div class="legend" id="bleg" style="justify-content:center;margin-top:12px"></div>
+      <div class="tot-row"><span style="color:var(--tx2)">Total dépenses</span><span style="font-weight:500;color:var(--tx1)" id="btot">0 €</span></div>
+    </div>
   </div>
 
+  <!-- PATRIMOINE -->
   <div class="scr" id="scr-patrim">
     <div class="mhdr">
       <button class="mnav" onclick="chgPM(-1)"><i class="ti ti-chevron-left"></i></button>
@@ -150,9 +180,23 @@ body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + en
       <div class="scard"><div class="slbl">Immo</div><div class="sval g" id="pimm">0 €</div></div>
       <div class="scard"><div class="slbl">Passifs</div><div class="sval r" id="ppas">0 €</div></div>
     </div>
+    <div id="snap-zone"></div>
     <div id="psecs"></div>
+    <!-- Graphique patrimoine -->
+    <div class="stl" style="margin-top:8px">Répartition de l'épargne</div>
+    <div class="chart-card">
+      <div style="position:relative;width:100%;height:220px">
+        <canvas id="patrimPie" role="img" aria-label="Répartition de l'épargne et immobilier">Répartition épargne</canvas>
+      </div>
+      <div class="legend" id="pleg" style="justify-content:center;margin-top:12px"></div>
+      <div class="tot-row"><span style="color:var(--tx2)">Total épargne + immo</span><span style="font-weight:500;color:var(--tx1)" id="ptot">0 €</span></div>
+    </div>
+    <!-- Épargne mensuelle moyenne -->
+    <div class="stl" style="margin-top:8px">Épargne livrets — moyenne mensuelle</div>
+    <div class="card" id="moy-card"></div>
   </div>
 
+  <!-- HISTORIQUE -->
   <div class="scr" id="scr-histo">
     <div class="stl" style="margin-top:4px">Opérations — <span id="hm">Mai 2026</span></div>
     <div class="card" id="hlist"></div>
@@ -182,9 +226,13 @@ body{font-family:var(--font);background:var(--bg3);padding-bottom:calc(72px + en
 </div>
 
 <script>
+// Anti-zoom
+document.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+let _lt=0;
+document.addEventListener('touchend',e=>{const n=Date.now();if(n-_lt<300)e.preventDefault();_lt=n;},{passive:false});
+
 const MN=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const MS=['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
-const MM=4,MY=2026;
 
 const CATS=[
   {key:'revenus',label:'Revenus',icon:'ti-currency-euro',bg:'#EAF3DE',col:'#3B6D11',ac:'g',sign:'+',nd:true,ns:true},
@@ -215,6 +263,7 @@ let ocm={};
 function goc(){const k=bk(cm,cy);if(!ocm[k])ocm[k]=new Set();return ocm[k];}
 
 function baseBudget(){return{
+  _closed:false,
   revenus:[{id:1,nom:'Alternance',montant:952.16,compte:'CM'},{id:2,nom:'Papa',montant:100,compte:'CM'},{id:3,nom:'Maman',montant:214,compte:'CM'},{id:4,nom:'Papy',montant:300,compte:'CM'},{id:5,nom:'APL',montant:199,compte:'CM'},{id:6,nom:'Mobili-Jeune',montant:100,compte:'CM'}],
   charges:[{id:10,nom:'Loyer 14 Rue du Loup',montant:488.84,compte:'CM',date:'01/05',statut:'Débité'},{id:11,nom:'EDF',montant:47,compte:'CM',date:'07/05',statut:'Débité'},{id:12,nom:'Assurance habitation',montant:9.89,compte:'CM',date:'04/05',statut:'Débité'},{id:13,nom:'Intérêts prêt étudiant',montant:34.81,compte:'CM',date:'08/05',statut:'Débité'},{id:14,nom:'Cotisations Crédit Mutuel',montant:3.5,compte:'CM',date:'05/05',statut:'Débité'},{id:15,nom:'Bourso Prévoyance',montant:2,compte:'Bourso',date:'01/05',statut:'Débité'},{id:16,nom:'Bourso Métal',montant:9.9,compte:'Bourso',date:'10/05',statut:'Débité'},{id:17,nom:'Assurly',montant:59.33,compte:'CM',date:'03/05',statut:'Débité'}],
   abonnements:[{id:20,nom:'Box Bouygues',montant:23.99,compte:'CM',date:'03/05',statut:'Débité'},{id:21,nom:'Forfait Bouygues',montant:13.99,compte:'CM',date:'03/05',statut:'Débité'},{id:22,nom:'Canal+',montant:22,compte:'CM',date:'05/05',statut:'Débité'},{id:23,nom:'UGC',montant:11.95,compte:'CM',date:'04/05',statut:'Débité'},{id:24,nom:'Claude AI',montant:21.6,compte:'CM',date:'02/05',statut:'Débité'},{id:25,nom:'TBM (tram)',montant:20.8,compte:'CM',date:'03/05',statut:'Débité'},{id:26,nom:'Apple Cloud',montant:0.99,compte:'CM',date:'14/05',statut:'Débité'}],
@@ -225,56 +274,54 @@ function baseBudget(){return{
 
 function newMonth(prev){
   const p=JSON.parse(JSON.stringify(prev));
+  p._closed=false;delete p._isNew;
   ['charges','abonnements'].forEach(k=>{p[k].forEach(i=>{i.statut='Planifié';i.date='';});});
-  p.plaisirs=[];
-  p.courses.semaines.forEach(s=>{s.reel=null;});
+  p.plaisirs=[];p.courses.semaines.forEach(s=>{s.reel=null;});
   p.epargne.forEach(i=>{i.statut='Planifié';i.date='';});
-  return p;
+  p._isNew=true;return p;
 }
+
+function buildSnaps(){return{
+  '2025-06':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:315.77,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:85,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:1857.06,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:310,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:878.06,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:151.05,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2025-07':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:346,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:127.91,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:1842.96,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:400,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:931.17,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:152.1,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2025-08':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:264,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:72.45,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:1899.96,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:400,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:990.63,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:160.74,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2025-09':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:68,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:0.21,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:1849,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:268,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1057.96,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:160.74,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2025-10':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:131.18,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:36.15,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:1932.01,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:300,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1073.35,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:161.74,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2025-11':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:22.36,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:118.8,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:1984.86,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:500,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1074.97,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:162.74,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2025-12':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:162.33,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:0,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:2095.97,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1050,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1086.1,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:164.77,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2026-01':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:394.91,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:80.74,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:2122.59,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1050,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1118.9,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:164.69,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2026-02':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:87.28,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:41.34,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:2290.87,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1200,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1115.58,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:165.72,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2026-03':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:127.8,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:102.83,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:2303.84,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1600,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1089,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:200,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:166.7,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2026-04':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:66,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:104.85,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:2470.11,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1600,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1110.53,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:300,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:167.68,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+  '2026-05':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:314.57,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:21.14,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:2476.4,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1600,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1152.34,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:200,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:167.68,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
+};}
 
 const DD=()=>({
   budgets:{'2026-05':baseBudget()},
   patrimoine:{
-    snapshots:{
-      '2025-06':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:346,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:127.91,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:1842.96,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:400,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:931.17,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:152.1,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
-      '2025-09':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:264,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:72.45,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:1899.96,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:400,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:990.63,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:160.74,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
-      '2025-12':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:162.33,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:0,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:2095.97,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1050,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1086.1,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:164.77,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
-      '2026-02':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:87.28,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:41.34,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:2290.87,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1200,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1115.58,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:0,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:165.72,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
-      '2026-04':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:66,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:104.85,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:2470.11,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1600,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1110.53,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:300,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:167.68,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
-      '2026-05':{comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:314.57,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:21.14,banque:'Boursobank'}],epargne:[{id:110,nom:'PEA',type:'pea',valeur:2476.4,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1600,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1152.34,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:200,banque:'Crédit Mutuel'}],immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:167.68,banque:'Bricks.co'}],passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}]},
-    },
-    current:{
-      comptes:[{id:100,nom:'Crédit Mutuel',type:'compte',valeur:314.57,banque:'Crédit Mutuel'},{id:101,nom:'Boursobank',type:'compte',valeur:21.14,banque:'Boursobank'}],
-      epargne:[{id:110,nom:'PEA',type:'pea',valeur:2476.4,banque:'Boursobank'},{id:111,nom:'Livret Jeune',type:'livret',valeur:1600,banque:'Crédit Mutuel'},{id:112,nom:'Assurance Vie',type:'av',valeur:1152.34,banque:'Crédit Mutuel'},{id:113,nom:'LDD',type:'ldd',valeur:200,banque:'Crédit Mutuel'}],
-      immobilier:[{id:120,nom:'Hôtel St Wiltz',type:'immo',valeur:167.68,banque:'Bricks.co'}],
-      passifs:[{id:130,nom:'Prêt étudiant',type:'passif',valeur:35100,banque:''}],
-    }
+    current:JSON.parse(JSON.stringify(buildSnaps()['2026-05'])),
+    snapshots:buildSnaps(),drafts:{},editingMonth:'2026-05',
   },
   nextId:500,
 });
 
 let D=DD();
-function sv(){try{localStorage.setItem('bb2',JSON.stringify(D))}catch(e){}}
-function ld(){try{const s=localStorage.getItem('bb2');if(s)D=JSON.parse(s)}catch(e){}}
+function sv(){try{localStorage.setItem('bb3',JSON.stringify(D))}catch(e){}}
+function ld(){try{const s=localStorage.getItem('bb3');if(s){D=JSON.parse(s);const b=buildSnaps();Object.keys(b).forEach(k=>{if(!D.patrimoine.snapshots[k])D.patrimoine.snapshots[k]=b[k];});sv();}}catch(e){}}
 ld();
 
-function gcb(){
-  const k=bk(cm,cy);
-  if(!D.budgets[k]){
-    let p=cm-1,y=cy;if(p<0){p=11;y--;}
-    const pb=D.budgets[bk(p,y)];
-    D.budgets[k]=pb?newMonth(pb):baseBudget();
-    D.budgets[k]._isNew=true;sv();
-  }
-  return D.budgets[k];
-}
+function gcb(){const k=bk(cm,cy);return D.budgets[k]||null;}
+function getBMs(){return Object.keys(D.budgets).sort();}
+function nxtM(m,y){let nm=m+1,ny=y;if(nm>11){nm=0;ny++;}return{m:nm,y:ny};}
+function prvM(m,y){let nm=m-1,ny=y;if(nm<0){nm=11;ny--;}return{m:nm,y:ny};}
 
-function fmt(n){return parseFloat(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'}
-function fmk(n){return Math.round(n).toLocaleString('fr-FR')+' €'}
-function nid(){return++D.nextId}
-function sk(m,y){return y+'-'+(m+1<10?'0':'')+(m+1)}
+function fmt(n){return parseFloat(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+function fmk(n){return Math.round(n).toLocaleString('fr-FR')+' €';}
+function nid(){return++D.nextId;}
+function sk(m,y){return y+'-'+(m+1<10?'0':'')+(m+1);}
 function ta(s){if(!s)return 0;return[...s.comptes,...s.epargne,...s.immobilier].reduce((a,x)=>a+x.valeur,0);}
 function ct(b){const c=b.courses;return c.semaines.filter(s=>s.reel!==null).reduce((a,x)=>a+x.reel,0)+c.semaines.filter(s=>s.reel===null).length*c.virementSem;}
+function sdot(s){const c=s==='Débité'||s==='Fait'?'#1D9E75':s==='En cours'?'#EF9F27':'#B4B2A9';return`<span class="sd" style="background:${c}"></span>`;}
 
 function go(s){
   document.querySelectorAll('.scr').forEach(x=>x.classList.remove('on'));
@@ -283,13 +330,19 @@ function go(s){
   document.getElementById('tnb-'+s).classList.add('on');
   render();
 }
+
+function updMDisp(){
+  document.getElementById('mdisp').innerHTML=MN[cm]+' '+cy+' <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i>';
+  const p=prvM(cm,cy);
+  document.getElementById('bpm').disabled=!D.budgets[bk(p.m,p.y)];
+  const n=nxtM(cm,cy);
+  document.getElementById('bnm').disabled=!D.budgets[bk(n.m,n.y)];
+}
+
 function chgMonth(d){
-  let nm=cm+d,ny=cy;if(nm>11){nm=0;ny++;}if(nm<0){nm=11;ny--;}
-  if(ny<MY||(ny===MY&&nm<MM))return;
-  cm=nm;cy=ny;
-  document.getElementById('mdisp').textContent=MN[cm]+' '+cy;
-  document.getElementById('bpm').disabled=(cy===MY&&cm===MM);
-  renderB();
+  const p=d<0?prvM(cm,cy):nxtM(cm,cy);
+  if(!D.budgets[bk(p.m,p.y)])return;
+  cm=p.m;cy=p.y;updMDisp();renderB();
 }
 function chgPM(d){
   let nm=pm+d,ny=py;if(nm>11){nm=0;ny++;}if(nm<0){nm=11;ny--;}
@@ -297,67 +350,136 @@ function chgPM(d){
   document.getElementById('pmd').innerHTML=MN[pm]+' '+py+' <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i>';
   renderP();
 }
-function openCal(){
-  let html='',y=2025;
-  while(y<=2026){
+
+function dismissBanner(){
+  const b=document.getElementById('nmb');
+  if(b&&!b.classList.contains('hidden'))b.classList.add('hidden');
+}
+
+function openBudgetCal(){
+  const months=getBMs(),byYear={};
+  months.forEach(k=>{const[y,m]=k.split('-');if(!byYear[y])byYear[y]=[];byYear[y].push(parseInt(m)-1);});
+  let html='';
+  Object.keys(byYear).sort().forEach(y=>{
     html+=`<div class="cy">${y}</div><div class="cg">`;
-    const ms=(y===2025?5:0),me=(y===2026?4:11);
-    for(let m=ms;m<=me;m++){const on=(m===pm&&y===py);html+=`<div class="cm${on?' on':''}" onclick="spM(${m},${y})">${MS[m]}</div>`;}
-    html+='</div>';y++;
-  }
+    byYear[y].sort((a,b)=>a-b).forEach(m=>{
+      const k=bk(m,parseInt(y)),isOn=(m===cm&&parseInt(y)===cy);
+      const isClosed=D.budgets[k]&&D.budgets[k]._closed;
+      const dot=isClosed?`<span class="snap-dot" style="background:#D85A30"></span>`:`<span class="snap-dot" style="background:#1D9E75"></span>`;
+      html+=`<div class="cm${isOn?' on':''}${isClosed?' closed':''}" onclick="selBM(${m},${y})">${MS[m]}${dot}</div>`;
+    });
+    html+='</div>';
+  });
+  html+=`<div class="legend"><span class="leg-item"><span class="leg-dot" style="background:#1D9E75"></span>Actif</span><span class="leg-item"><span class="leg-dot" style="background:#D85A30"></span>Clos</span></div>`;
+  openOv('Historique budget',html,null);
+}
+function selBM(m,y){cm=m;cy=parseInt(y);closeOv();updMDisp();renderB();}
+
+function openCal(){
+  const allM=getAllPM(),byYear={};
+  allM.forEach(k=>{const[y,m]=k.split('-');if(!byYear[y])byYear[y]=[];byYear[y].push(parseInt(m)-1);});
+  let html='';
+  Object.keys(byYear).sort().forEach(y=>{
+    html+=`<div class="cy">${y}</div><div class="cg">`;
+    byYear[y].sort((a,b)=>a-b).forEach(m=>{
+      const k=sk(m,parseInt(y)),isOn=(m===pm&&parseInt(y)===py);
+      const isSnap=!!D.patrimoine.snapshots[k],isDraft=!!D.patrimoine.drafts[k];
+      const isCur=(k===D.patrimoine.editingMonth&&!isSnap&&!isDraft);
+      const dotCol=isSnap?'#1D9E75':isDraft?'#EF9F27':isCur?'#185FA5':'';
+      const dot=dotCol?`<span class="snap-dot" style="background:${dotCol}"></span>`:'';
+      html+=`<div class="cm${isOn?' on':''}" onclick="selPM(${m},${y})">${MS[m]}${dot}</div>`;
+    });
+    html+='</div>';
+  });
+  html+=`<div class="legend"><span class="leg-item"><span class="leg-dot" style="background:#1D9E75"></span>Figé</span><span class="leg-item"><span class="leg-dot" style="background:#EF9F27"></span>Brouillon</span><span class="leg-item"><span class="leg-dot" style="background:#185FA5"></span>En cours</span></div>`;
   openOv('Choisir un mois',html,null);
 }
-function spM(m,y){
-  pm=m;py=y;
-  document.getElementById('pmd').innerHTML=MN[pm]+' '+py+' <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i>';
-  closeOv();renderP();
-}
-function sdot(s){const c=s==='Débité'||s==='Fait'?'#1D9E75':s==='En cours'?'#EF9F27':'#B4B2A9';return`<span class="sd" style="background:${c}"></span>`;}
-function tc(k){const o=goc();if(o.has(k))o.delete(k);else o.add(k);renderB();}
+function selPM(m,y){pm=m;py=parseInt(y);document.getElementById('pmd').innerHTML=MN[pm]+' '+py+' <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i>';closeOv();renderP();}
 
-function rcb(b,open){
-  const c=b.courses,tot=ct(b),prev=c.previsionnel;
-  const pct=Math.min(100,Math.round(tot/prev*100));
-  const bc=tot>prev?'#D85A30':tot<prev?'#1D9E75':'#EF9F27';
-  const sai=c.semaines.filter(s=>s.reel!==null).length,eco=prev-tot;
-  let h=`<div class="ch${open?' open':''}" onclick="tc('courses')">
-    <div class="ci" style="background:#FAEEDA"><i class="ti ti-shopping-cart" style="color:#854F0B"></i></div>
-    <div class="cn"><div class="ct">Courses</div><div class="cs">${sai}/4 semaines · Bourso</div></div>
-    <div class="cv r">−${fmt(tot)}</div>
-    <i class="ti ti-chevron-down cc${open?' open':''}"></i>
-  </div>
-  <div class="cb${open?' open':''}">
-    <div class="csh">
-      <div class="cbr"><span class="cbl">Prévu</span><span class="cbv" style="color:var(--tx2)">${fmt(prev)}</span></div>
-      <div class="cbr"><span class="cbl">Réel estimé</span><span class="cbv" style="color:${bc}">${fmt(tot)}</span></div>
-      ${eco!==0?`<div class="cbr"><span class="cbl">${eco>0?'Économie':'Dépassement'}</span><span class="cbv" style="color:${eco>0?'#1D9E75':'#D85A30'}">${eco>0?'−':'+'} ${fmt(Math.abs(eco))}</span></div>`:''}
-      <div class="cpb"><div class="cpf" style="width:${pct}%;background:${bc}"></div></div>
-      <div class="cpc">${pct}% du budget utilisé</div>
-    </div>`;
-  c.semaines.forEach((sem,i)=>{
-    const hs=sem.reel!==null,df=hs?sem.reel-c.virementSem:null;
-    const ov=df!==null&&df>0,un=df!==null&&df<0;
-    let bc2='pend',bl='À venir';if(hs){bc2=ov?'over':'ok';bl=ov?'Dépassé':'Économie';}
-    h+=`<div class="sr">
-      <div class="sl"><div class="sln">${sem.label}</div><div class="sls">virement ${fmt(c.virementSem)}</div></div>
-      <span class="sbg ${bc2}">${bl}</span>
-      <div class="sa${ov?' over':un?' ok':''}">${hs?fmt(sem.reel):'—'}</div>
-      <button class="seb" onclick="osE(${i})"><i class="ti ti-edit"></i></button>
-    </div>`;
-  });
-  h+='</div>';return h;
+function getAllPM(){
+  const keys=new Set();
+  Object.keys(D.patrimoine.snapshots).forEach(k=>keys.add(k));
+  Object.keys(D.patrimoine.drafts).forEach(k=>keys.add(k));
+  keys.add(D.patrimoine.editingMonth);
+  return[...keys].sort();
 }
+
+function closerMois(){
+  openOv('Clore '+MN[cm]+' '+cy,`
+    <div style="font-size:14px;color:var(--tx2);margin-bottom:20px;line-height:1.6">En clôturant ce mois, il passera en <strong style="color:var(--tx1)">lecture seule</strong> définitivement.</div>
+    <button class="sbtn" style="background:#D85A30" onclick="confirmClose()"><i class="ti ti-lock"></i> Confirmer la clôture</button>
+    <button class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="closeOv()">Annuler</button>
+  `,null);
+}
+function confirmClose(){const k=bk(cm,cy);if(D.budgets[k])D.budgets[k]._closed=true;sv();closeOv();renderB();}
+
+function creerMoisSuivant(){
+  const n=nxtM(cm,cy),nk=bk(n.m,n.y);
+  if(D.budgets[nk])return;
+  const cur=D.budgets[bk(cm,cy)];
+  D.budgets[nk]=newMonth(cur||baseBudget());
+  sv();cm=n.m;cy=n.y;updMDisp();renderB();
+}
+
+function tc(k){dismissBanner();const o=goc();if(o.has(k))o.delete(k);else o.add(k);renderB();}
+
+// Chart.js instances
+let bChart=null,pChart=null;
 
 function renderB(){
-  const b=gcb(),oc=goc();
-  document.getElementById('nmb').innerHTML=b._isNew?`<div class="nb-banner">✨ Nouveau mois créé depuis le mois précédent — plaisirs et courses remis à zéro</div>`:'';
-  let rv=0,dp=0,ep=0,h='';
+  const b=gcb(),isClosed=b&&b._closed,isNew=b&&b._isNew,readonly=isClosed;
+  const n=nxtM(cm,cy),nextExists=!!D.budgets[bk(n.m,n.y)];
+  updMDisp();
+
+  // Bannière nouveau mois
+  const bnr=document.getElementById('nmb');
+  if(b&&isNew&&!bnr.classList.contains('hidden')){bnr.textContent='✨ Nouveau mois créé — plaisirs et courses remis à zéro';bnr.classList.remove('hidden');}
+  else if(!b||!isNew){bnr.classList.add('hidden');}
+
+  // Bandeau lecture seule
+  document.getElementById('rob').innerHTML=readonly
+    ?`<div class="ro-banner"><i class="ti ti-lock"></i> ${MN[cm]} ${cy} — mois clos · lecture seule</div>`:'';
+
+  if(!b){
+    document.getElementById('trev').textContent='—';document.getElementById('tdep').textContent='—';
+    document.getElementById('tsol').textContent='—';document.getElementById('tepa').textContent='—';
+    document.getElementById('bcats').innerHTML='';
+    document.getElementById('bact').innerHTML=`<button class="creer-btn" onclick="creerMoisSuivant()"><i class="ti ti-plus"></i> Créer le budget de ${MN[cm]} ${cy}</button>`;
+    return;
+  }
+
+  const oc=goc();let rv=0,dp=0,ep=0,html='';
   CATS.forEach(cat=>{
     const op=oc.has(cat.key);
-    if(cat.sp==='courses'){h+=`<div class="card">${rcb(b,op)}</div>`;dp+=ct(b);return;}
+    if(cat.sp==='courses'){
+      const c=b.courses,tot=ct(b),prev=c.previsionnel;
+      const pct=Math.min(100,Math.round(tot/prev*100));
+      const bc=tot>prev?'#D85A30':tot<prev?'#1D9E75':'#EF9F27';
+      const sai=c.semaines.filter(s=>s.reel!==null).length;
+      html+=`<div class="card"><div class="ch${op?' open':''}" onclick="tc('courses')">
+        <div class="ci" style="background:#FAEEDA"><i class="ti ti-shopping-cart" style="color:#854F0B"></i></div>
+        <div class="cn"><div class="ct">Courses</div><div class="cs">${sai}/4 semaines</div></div>
+        <div class="cv r">−${fmt(tot)}</div>
+        <i class="ti ti-chevron-down cc${op?' open':''}"></i>
+      </div><div class="cb${op?' open':''}">
+        <div class="csh">
+          <div class="cbr"><span class="cbl">Prévu</span><span class="cbv">${fmt(prev)}</span></div>
+          <div class="cpb"><div class="cpf" style="width:${pct}%;background:${bc}"></div></div>
+          <div class="cpc">${pct}% utilisé</div>
+        </div>
+        ${c.semaines.map((sem,i)=>{
+          const hs=sem.reel!==null,df=hs?sem.reel-c.virementSem:null,ov=df!==null&&df>0;
+          return`<div class="sr"><div class="sl"><div class="sln">${sem.label}</div><div class="sls">${fmt(c.virementSem)}</div></div>
+            <div class="sa${ov?' over':''}">${hs?fmt(sem.reel):'—'}</div>
+            ${!readonly?`<button class="seb" onclick="osE(${i})"><i class="ti ti-edit"></i></button>`:''}
+          </div>`;
+        }).join('')}
+      </div></div>`;
+      dp+=tot;return;
+    }
     const raw=b[cat.key]||[],its=si(cat,raw),tot=raw.reduce((a,x)=>a+x.montant,0);
     if(cat.key==='revenus')rv=tot;else if(cat.key==='epargne')ep=tot;else dp+=tot;
-    h+=`<div class="card"><div class="ch${op?' open':''}" onclick="tc('${cat.key}')">
+    html+=`<div class="card"><div class="ch${op?' open':''}" onclick="tc('${cat.key}')">
       <div class="ci" style="background:${cat.bg}"><i class="ti ${cat.icon}" style="color:${cat.col}"></i></div>
       <div class="cn"><div class="ct">${cat.label}</div><div class="cs">${its.length} ligne${its.length>1?'s':''}</div></div>
       <div class="cv ${cat.ac}">${cat.sign}${fmk(tot)}</div>
@@ -366,96 +488,228 @@ function renderB(){
     its.forEach(item=>{
       const meta=cat.ns?item.compte||'':[item.compte,item.date,item.statut].filter(Boolean).join(' · ');
       const dot=cat.ns?'':sdot(item.statut||'');
-      h+=`<div class="row"><div class="ri"><div class="rn">${item.nom}</div><div class="rm">${dot} ${meta}</div></div>
+      html+=`<div class="row" onclick="dismissBanner()"><div class="ri"><div class="rn">${item.nom}</div><div class="rm">${dot} ${meta}</div></div>
         <div class="ra ${cat.ac}">${cat.sign}${fmt(item.montant)}</div>
-        <button class="rb" onclick="oE('${cat.key}',${item.id})"><i class="ti ti-edit"></i></button></div>`;
+        ${!readonly?`<button class="rb" onclick="oE('${cat.key}',${item.id})"><i class="ti ti-edit"></i></button>`:''}
+      </div>`;
     });
-    h+=`<button class="ab" onclick="oA('${cat.key}')"><i class="ti ti-plus"></i>Ajouter</button></div></div>`;
+    if(!readonly)html+=`<button class="ab" onclick="dismissBanner();oA('${cat.key}')"><i class="ti ti-plus"></i>Ajouter</button>`;
+    html+='</div></div>';
   });
-  document.getElementById('bcats').innerHTML=h;
+  document.getElementById('bcats').innerHTML=html;
   dp+=ep;const sol=rv-dp;
   document.getElementById('trev').textContent=fmk(rv);
   document.getElementById('tdep').textContent=fmk(dp);
   document.getElementById('tepa').textContent=fmk(ep);
   const se=document.getElementById('tsol');
   se.textContent=(sol>=0?'+':'')+fmk(Math.abs(sol));se.className='sval '+(sol>=0?'g':'r');
-  document.getElementById('bpm').disabled=(cy===MY&&cm===MM);
+
+  // Actions en bas
+  let acts='';
+  if(!readonly)acts+=`<button class="clore-btn" onclick="closerMois()"><i class="ti ti-lock"></i> Clore ${MN[cm]} ${cy}</button>`;
+  if(!nextExists)acts+=`<button class="creer-btn" onclick="creerMoisSuivant()"><i class="ti ti-plus"></i> Créer le budget de ${MN[n.m]} ${n.y}</button>`;
+  document.getElementById('bact').innerHTML=acts;
+
+  // Graphique budget
+  const charges=b.charges.reduce((a,x)=>a+x.montant,0)+b.abonnements.reduce((a,x)=>a+x.montant,0)+ct(b);
+  const epa=b.epargne.reduce((a,x)=>a+x.montant,0);
+  const plais=b.plaisirs.reduce((a,x)=>a+x.montant,0);
+  const tot=charges+epa+plais;
+  const BCOLS=['#1D9E75','#185FA5','#D85A30'];
+  const BLBLS=['Charges & abonnements','Épargne','Plaisirs & Autres'];
+  const BVALS=[charges,epa,plais];
+  document.getElementById('btot').textContent=fmk(tot);
+  const bleg=document.getElementById('bleg');
+  bleg.innerHTML=BLBLS.map((l,i)=>`<span class="leg-item"><span class="leg-dot" style="background:${BCOLS[i]}"></span><span style="color:var(--tx2)">${l} <strong style="color:var(--tx1)">${tot>0?Math.round(BVALS[i]/tot*100):0}%</strong></span></span>`).join('');
+  if(bChart)bChart.destroy();
+  bChart=new Chart(document.getElementById('budgetPie'),{
+    type:'doughnut',
+    data:{labels:BLBLS,datasets:[{data:BVALS,backgroundColor:BCOLS,borderColor:'transparent',borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>{const v=ctx.raw,p=tot>0?Math.round(v/tot*100):0;return ` ${fmk(v)} · ${p}%`;}}}}}
+  });
 }
 
 function osE(i){
-  const b=gcb(),sem=b.courses.semaines[i],v=b.courses.virementSem;
-  const body=`<div style="background:var(--bg2);border-radius:var(--r2);padding:12px;margin-bottom:16px">
-    <div style="font-size:12px;color:var(--tx2);margin-bottom:4px">${sem.label}</div>
-    <div style="font-size:13px;color:var(--tx1)">Virement prévu : <strong>${fmt(v)}</strong></div>
-  </div>
-  <div class="fg"><label class="fl">Montant réellement dépensé (€)</label>
+  dismissBanner();
+  const b=gcb();if(!b)return;
+  const sem=b.courses.semaines[i],v=b.courses.virementSem;
+  openOv(sem.label,`<div class="fg"><label class="fl">Montant dépensé (€)</label>
     <input class="fi" id="fsr" type="number" step="0.01" value="${sem.reel!==null?sem.reel:''}" placeholder="Ex: 54.30" inputmode="decimal" style="font-size:22px;text-align:center;font-weight:500">
   </div>
-  <div style="font-size:11px;color:var(--tx2);text-align:center;margin-bottom:12px">Laisse vide si pas encore terminée</div>
   <button class="sbtn" onclick="svS(${i})">Enregistrer</button>
-  ${sem.reel!==null?`<button class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="clS(${i})">Effacer</button>`:''}`;
-  openOv(sem.label,body,null);
+  ${sem.reel!==null?`<button class="sbtn" style="background:transparent;color:var(--tx2);border:.5px solid var(--bd2);margin-top:8px" onclick="clS(${i})">Effacer</button>`:''}`,null);
   setTimeout(()=>{const e=document.getElementById('fsr');if(e)e.focus();},150);
 }
 function svS(i){const b=gcb(),v=document.getElementById('fsr').value;b.courses.semaines[i].reel=v===''?null:parseFloat(v)||0;sv();render();closeOv();}
 function clS(i){const b=gcb();b.courses.semaines[i].reel=null;sv();render();closeOv();}
 
-function gpd(){const k=sk(pm,py);return D.patrimoine.snapshots[k]||D.patrimoine.current;}
+function gpd(){const k=sk(pm,py);if(D.patrimoine.snapshots[k])return{data:D.patrimoine.snapshots[k],status:'snapshot'};if(D.patrimoine.drafts[k])return{data:D.patrimoine.drafts[k],status:'draft'};if(k===D.patrimoine.editingMonth)return{data:D.patrimoine.current,status:'current'};return null;}
 function gppd(){
   let p=pm-1,y=py;if(p<0){p=11;y--;}
   const ks=Object.keys(D.patrimoine.snapshots).sort(),t=sk(p,y),av=ks.filter(k=>k<=t);
   if(!av.length)return null;return D.patrimoine.snapshots[av[av.length-1]];
 }
+function svSnap(){
+  const k=sk(pm,py);
+  let d;if(k===D.patrimoine.editingMonth)d=JSON.parse(JSON.stringify(D.patrimoine.current));
+  else if(D.patrimoine.drafts[k])d=JSON.parse(JSON.stringify(D.patrimoine.drafts[k]));
+  else return;
+  D.patrimoine.snapshots[k]=d;delete D.patrimoine.drafts[k];sv();renderP();
+}
+function createDraft(){
+  const k=sk(pm,py),ks=Object.keys(D.patrimoine.snapshots).sort();
+  const base=ks.length>0?JSON.parse(JSON.stringify(D.patrimoine.snapshots[ks[ks.length-1]])):JSON.parse(JSON.stringify(D.patrimoine.current));
+  D.patrimoine.drafts[k]=base;sv();renderP();
+}
+function getED(){const k=sk(pm,py);if(k===D.patrimoine.editingMonth)return D.patrimoine.current;if(D.patrimoine.drafts[k])return D.patrimoine.drafts[k];return null;}
 
 function renderP(){
-  const snap=gpd(),prev=gppd();
-  const ed=(sk(pm,py)==='2026-05'||!D.patrimoine.snapshots[sk(pm,py)]);
-  function ps(items,sec,cls,isp){
+  const res=gpd(),prev=gppd();
+  if(!res){
+    document.getElementById('pnet').textContent='—';document.getElementById('pnet').className='ptv';
+    document.getElementById('psub').textContent='Aucune donnée';
+    document.getElementById('peb').innerHTML='';
+    ['pcpt','pepa','pimm','ppas'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('snap-zone').innerHTML=`<button class="snap-btn" style="background:#185FA5" onclick="createDraft()"><i class="ti ti-plus"></i> Créer le patrimoine de ${MN[pm]} ${py}</button>`;
+    document.getElementById('psecs').innerHTML='';
+    renderMoyenne();renderPatrimChart(null);return;
+  }
+  const snap=res.data,status=res.status,isEd=(status==='current'||status==='draft'),isSnap=(status==='snapshot');
+  const tC=snap.comptes.reduce((a,x)=>a+x.valeur,0),tE=snap.epargne.reduce((a,x)=>a+x.valeur,0),tI=snap.immobilier.reduce((a,x)=>a+x.valeur,0),tP=snap.passifs.reduce((a,x)=>a+x.valeur,0),tA=tC+tE+tI,net=tA-tP;
+  document.getElementById('pcpt').textContent=fmk(tC);document.getElementById('pepa').textContent=fmk(tE);document.getElementById('pimm').textContent=fmk(tI);document.getElementById('ppas').textContent=fmk(tP);
+  const pn=document.getElementById('pnet');
+  if(net<0){pn.textContent='−'+fmk(Math.abs(net));pn.className='ptv r';}else if(net>0){pn.textContent='+'+fmk(net);pn.className='ptv g';}else{pn.textContent='0 €';pn.className='ptv';}
+  document.getElementById('psub').textContent=`Actifs : ${fmk(tA)} · Passifs : ${fmk(tP)}`;
+
+  // Bannières évolution
+  let bn='';
+  // 1. Évolution depuis début d'année
+  const curYear=py;
+  const yrKeys=Object.keys(D.patrimoine.snapshots).filter(k=>k.startsWith(curYear+'-')).sort();
+  const curKey=sk(pm,py);
+  if(yrKeys.length>1){
+    const firstKey=yrKeys[0];
+    const firstSnap=D.patrimoine.snapshots[firstKey];
+    if(firstSnap&&firstKey!==curKey){
+      const firstA=ta(firstSnap),diff=tA-firstA,pct=(firstA>0?(diff/firstA*100):0).toFixed(1);
+      const cls=diff>0?'up':diff<0?'down':'flat',sign=diff>0?'+':'';
+      const ico=diff>0?'ti-trending-up':diff<0?'ti-trending-down':'ti-minus';
+      const icoCol=diff>0?'#1D9E75':diff<0?'#D85A30':'#888780';
+      const firstMName=MN[parseInt(firstKey.split('-')[1])-1];
+      bn+=`<div class="dc ${cls}"><i class="ti ${ico}" style="font-size:20px;color:${icoCol}"></i><div class="dl ${cls}">Évolution depuis ${firstMName} ${curYear}</div><div class="dv ${cls}">${sign}${fmk(diff)} (${sign}${pct}%)</div></div>`;
+    }
+  }
+  // 2. Évolution vs mois précédent
+  if(prev){const prevA=ta(prev),diff=tA-prevA,pct=(prevA>0?(diff/prevA*100):0).toFixed(1),cls=diff>0?'up':diff<0?'down':'flat',sign=diff>0?'+':'';bn+=`<div class="dc ${cls}"><i class="ti ${diff>0?'ti-trending-up':diff<0?'ti-trending-down':'ti-minus'}" style="font-size:20px;color:${diff>0?'#1D9E75':diff<0?'#D85A30':'#888780'}"></i><div class="dl ${cls}">Évolution vs mois précédent</div><div class="dv ${cls}">${sign}${fmk(diff)} (${sign}${pct}%)</div></div>`;}
+  document.getElementById('peb').innerHTML=bn;
+
+  // Zone snapshot
+  let sz='';
+  if(isSnap)sz=`<div class="snap-saved"><i class="ti ti-check"></i> Patrimoine figé pour ${MN[pm]} ${py}</div>`;
+  else if(status==='draft')sz=`<div style="background:#FFF8E6;border-radius:var(--r2);padding:8px 13px;margin-bottom:10px;font-size:12px;color:#854F0B;display:flex;align-items:center;gap:6px"><i class="ti ti-pencil"></i> Brouillon</div><button class="snap-btn" onclick="svSnap()"><i class="ti ti-device-floppy"></i> Enregistrer patrimoine de ${MN[pm]} ${py}</button>`;
+  else sz=`<button class="snap-btn" onclick="svSnap()"><i class="ti ti-device-floppy"></i> Enregistrer patrimoine de ${MN[pm]} ${py}</button>`;
+  document.getElementById('snap-zone').innerHTML=sz;
+
+  function patSec(items,sec,cls,isp){
     let h='';
     items.forEach(item=>{
       let ev='';
       if(prev&&!isp){const a=prev[sec]||[],p=a.find(x=>x.id===item.id);if(p){const df=item.valeur-p.valeur;if(Math.abs(df)>0.5){const sg=df>0?'+':'';const ec=df>0?'#1D9E75':'#D85A30';ev=`<span class="pe" style="color:${ec}">${sg}${fmk(df)}</span>`;}}}
-      h+=`<div class="pr">
-        ${piH(item.type)}
-        <div class="pn"><div class="pa">${item.nom}</div><div class="pb">${item.banque}</div></div>
+      h+=`<div class="pr">${piH(item.type)}<div class="pn"><div class="pa">${item.nom}</div><div class="pb">${item.banque}</div></div>
         <div style="text-align:right"><div class="pv ${cls}">${isp?'−':''}${fmt(item.valeur)}</div>${ev}</div>
-        ${ed?`<button class="rb" onclick="oEP('${sec}',${item.id})"><i class="ti ti-edit"></i></button>`:''}
+        ${isEd?`<button class="rb" onclick="oEP('${sec}',${item.id})"><i class="ti ti-edit"></i></button>`:''}
       </div>`;
     });
-    if(ed)h+=`<button class="ab" onclick="oAP('${sec}')"><i class="ti ti-plus"></i>Ajouter</button>`;
+    if(isEd)h+=`<button class="ab" onclick="oAP('${sec}')"><i class="ti ti-plus"></i>Ajouter</button>`;
     return h;
   }
-  const tC=snap.comptes.reduce((a,x)=>a+x.valeur,0),tE=snap.epargne.reduce((a,x)=>a+x.valeur,0),tI=snap.immobilier.reduce((a,x)=>a+x.valeur,0),tP=snap.passifs.reduce((a,x)=>a+x.valeur,0),tA=tC+tE+tI,net=tA-tP;
-  document.getElementById('pcpt').textContent=fmk(tC);
-  document.getElementById('pepa').textContent=fmk(tE);
-  document.getElementById('pimm').textContent=fmk(tI);
-  document.getElementById('ppas').textContent=fmk(tP);
-
-  // Patrimoine net : signe + couleur explicites
-  const pn=document.getElementById('pnet');
-  if(net<0){pn.textContent='−'+fmk(Math.abs(net));pn.className='ptv r';}
-  else if(net>0){pn.textContent='+'+fmk(net);pn.className='ptv g';}
-  else{pn.textContent='0 €';pn.className='ptv';}
-
-  document.getElementById('psub').textContent=`Actifs : ${fmk(tA)} · Passifs : ${fmk(tP)}`;
-  let bn='';
-  if(prev){const pa=ta(prev),df=tA-pa,pc=(pa>0?(df/pa*100):0).toFixed(1),cl=df>0?'up':df<0?'down':'flat',sg=df>0?'+':'';bn=`<div class="dc ${cl}"><i class="ti ${df>0?'ti-trending-up':df<0?'ti-trending-down':'ti-minus'}" style="font-size:20px;color:${df>0?'#1D9E75':df<0?'#D85A30':'#888780'}"></i><div class="dl ${cl}">Évolution vs mois précédent</div><div class="dv ${cl}">${sg}${fmk(df)} (${sg}${pc}%)</div></div>`;}
-  document.getElementById('peb').innerHTML=bn;
   const secs=[{t:'Comptes courants',id:'comptes',cls:'b',p:false},{t:'Épargne',id:'epargne',cls:'g',p:false},{t:'Immobilier',id:'immobilier',cls:'g',p:false},{t:'Passifs',id:'passifs',cls:'r',p:true}];
-  let ph='';secs.forEach(s=>{ph+=`<div class="stl">${s.t}</div><div class="card">${ps(snap[s.id],s.id,s.cls,s.p)}</div>`;});
-  if(!ed)ph+=`<div style="font-size:11px;color:var(--tx2);text-align:center;padding:8px 0 4px">Données historiques — lecture seule</div>`;
+  let ph='';secs.forEach(s=>{ph+=`<div class="stl">${s.t}</div><div class="card">${patSec(snap[s.id],s.id,s.cls,s.p)}</div>`;});
+  if(isSnap)ph+=`<div style="font-size:11px;color:var(--tx2);text-align:center;padding:8px 0 4px">Données figées — lecture seule</div>`;
   document.getElementById('psecs').innerHTML=ph;
+
+  renderPatrimChart(snap);
+  renderMoyenne();
+}
+
+function renderPatrimChart(snap){
+  if(pChart){pChart.destroy();pChart=null;}
+  if(!snap){document.getElementById('pleg').innerHTML='';document.getElementById('ptot').textContent='—';return;}
+  const items=[
+    {label:'PEA',valeur:snap.epargne.find(x=>x.type==='pea')?.valeur||0,color:'#185FA5'},
+    {label:'Livret Jeune',valeur:snap.epargne.find(x=>x.type==='livret')?.valeur||0,color:'#D4537E'},
+    {label:'Assurance Vie',valeur:snap.epargne.find(x=>x.type==='av')?.valeur||0,color:'#534AB7'},
+    {label:'LDD',valeur:snap.epargne.find(x=>x.type==='ldd')?.valeur||0,color:'#1D9E75'},
+    ...snap.immobilier.map(x=>({label:x.nom,valeur:x.valeur,color:'#D85A30'})),
+  ].filter(x=>x.valeur>0);
+  const tot=items.reduce((a,x)=>a+x.valeur,0);
+  document.getElementById('ptot').textContent=fmt(tot);
+  document.getElementById('pleg').innerHTML=items.map(it=>`<span class="leg-item"><span class="leg-dot" style="background:${it.color}"></span><span style="color:var(--tx2)">${it.label} <strong style="color:var(--tx1)">${tot>0?Math.round(it.valeur/tot*100):0}%</strong></span></span>`).join('');
+  pChart=new Chart(document.getElementById('patrimPie'),{
+    type:'doughnut',
+    data:{labels:items.map(i=>i.label),datasets:[{data:items.map(i=>i.valeur),backgroundColor:items.map(i=>i.color),borderColor:'transparent',borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>{const v=ctx.raw,p=tot>0?Math.round(v/tot*100):0;return ` ${fmt(v)} · ${p}%`;}}}}}
+  });
+}
+
+function renderMoyenne(){
+  // Livrets disponibles depuis snapshots
+  const allSnaps=D.patrimoine.snapshots;
+  const curYear=py;
+  const keys2026=Object.keys(allSnaps).filter(k=>k.startsWith(curYear+'-')).sort();
+  const allKeys=Object.keys(allSnaps).sort();
+
+  function livretTotal(k){const s=allSnaps[k];if(!s)return null;return s.epargne.filter(x=>x.type==='livret'||x.type==='ldd').reduce((a,x)=>a+x.valeur,0);}
+
+  const deltas=[];
+  for(let i=0;i<keys2026.length;i++){
+    const k=keys2026[i],idx=allKeys.indexOf(k);
+    if(idx<=0)continue;
+    const pk=allKeys[idx-1],cur=livretTotal(k),prev=livretTotal(pk);
+    if(cur===null||prev===null)continue;
+    const[y,m]=k.split('-');
+    deltas.push({month:MN[parseInt(m)-1],year:parseInt(y),delta:cur-prev});
+  }
+
+  const mcard=document.getElementById('moy-card');
+  if(!deltas.length){mcard.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--tx2)">Pas assez de données pour calculer la moyenne.</div>';return;}
+
+  const total=deltas.reduce((a,d)=>a+d.delta,0);
+  const moy=total/deltas.length;
+  const moyCol=moy>=0?'#1D9E75':'#D85A30';
+  const totCol=total>=0?'#185FA5':'#D85A30';
+  const fmtD=n=>{const r=Math.round(n);return(r>=0?'+':'')+r.toLocaleString('fr-FR')+' €';};
+
+  let h=`<div class="pr">
+    <div class="pi" style="background:#E1F5EE"><i class="ti ti-pig-money" style="color:#0F6E56"></i></div>
+    <div class="pn"><div class="pa">Moyenne mensuelle</div><div class="pb">Livret Jeune + LDD · ${curYear}</div></div>
+    <div class="pv" style="color:${moyCol};font-weight:500">${fmtD(moy)}</div>
+  </div>
+  <div class="pr">
+    <div class="pi" style="background:#E6F1FB"><i class="ti ti-trending-up" style="color:#185FA5"></i></div>
+    <div class="pn"><div class="pa">Total épargné</div><div class="pb">depuis janvier ${curYear}</div></div>
+    <div class="pv" style="color:${totCol};font-weight:500">${fmtD(total)}</div>
+  </div>`;
+  // Détail
+  deltas.forEach(d=>{
+    const c=d.delta>0?'#1D9E75':d.delta<0?'#D85A30':'var(--tx2)';
+    h+=`<div class="pr" style="border-bottom:.5px solid var(--bd1)"><div class="pn"><div class="pa" style="font-size:12px;color:var(--tx2)">${d.month} ${d.year}</div></div><div class="pv" style="color:${c};font-size:13px">${fmtD(d.delta)}</div></div>`;
+  });
+  mcard.innerHTML=h;
 }
 
 function renderH(){
-  const b=gcb(),all=[];
+  const b=gcb();
+  document.getElementById('hm').textContent=MN[cm]+' '+cy;
+  if(!b){document.getElementById('hlist').innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--tx2)">Aucune donnée.</div>';return;}
+  const all=[];
   b.revenus.forEach(x=>all.push({...x,_s:1}));
   ['charges','abonnements','epargne','plaisirs'].forEach(k=>b[k].forEach(x=>all.push({...x,_s:-1})));
-  all.push({id:9999,nom:'Courses (total mois)',compte:'Bourso',statut:'',_s:-1,montant:ct(b)});
+  all.push({id:9999,nom:'Courses',compte:'',statut:'',_s:-1,montant:ct(b)});
   all.sort((a,b2)=>b2.id-a.id);
-  document.getElementById('hm').textContent=MN[cm]+' '+cy;
   let h='';
-  all.forEach(item=>{const cls=item._s>0?'g':'r',sg=item._s>0?'+':'−';h+=`<div class="pr"><div class="pn"><div class="pa">${item.nom}</div><div class="pb">${[item.compte,item.date,item.statut].filter(Boolean).join(' · ')}</div></div><div class="pv ${cls}">${sg}${fmt(item.montant)}</div></div>`;});
+  all.forEach(item=>{const c=item._s>0?'#1D9E75':'#D85A30',sg=item._s>0?'+':'−';
+    h+=`<div class="pr"><div class="pn"><div class="pa">${item.nom}</div><div class="pb">${[item.compte,item.date,item.statut].filter(Boolean).join(' · ')}</div></div><div class="pv" style="color:${c}">${sg}${fmt(item.montant)}</div></div>`;});
   document.getElementById('hlist').innerHTML=h;
 }
 
@@ -487,9 +741,9 @@ function bForm(item,section){
     ${df}<div class="fg"><label class="fl">Compte</label><select class="fs" id="fc">${cOpts}</select></div>${sf}
     <button class="sbtn" onclick="svB()">Enregistrer</button>`;
 }
-function oA(section){eid=null;es=section;openOv('Nouvelle opération',bForm(null,section),null);}
+function oA(section){dismissBanner();eid=null;es=section;openOv('Nouvelle opération',bForm(null,section),null);}
 function oE(section,id){
-  const b=gcb(),item=b[section].find(x=>x.id===id);eid=id;es=section;
+  dismissBanner();const b=gcb(),item=b[section].find(x=>x.id===id);eid=id;es=section;
   openOv('Modifier',bForm(item,section),()=>{const b2=gcb();b2[es]=b2[es].filter(x=>x.id!==eid);sv();render();});
 }
 function svB(){
@@ -518,31 +772,24 @@ function pForm(item,section){
 }
 function oAP(section){eid=null;es=section;openOv('Nouvel actif',pForm(null,section),null);}
 function oEP(section,id){
-  const item=D.patrimoine.current[section].find(x=>x.id===id);eid=id;es=section;
-  openOv('Modifier',pForm(item,section),()=>{D.patrimoine.current[es]=D.patrimoine.current[es].filter(x=>x.id!==eid);D.patrimoine.snapshots['2026-05']=JSON.parse(JSON.stringify(D.patrimoine.current));sv();renderP();});
+  const data=getED();if(!data)return;
+  const item=data[section].find(x=>x.id===id);eid=id;es=section;
+  openOv('Modifier',pForm(item,section),()=>{const d2=getED();if(d2)d2[es]=d2[es].filter(x=>x.id!==eid);sv();renderP();});
 }
 function svP(section){
   const nom=document.getElementById('fn').value.trim(),valeur=parseFloat(document.getElementById('fv').value)||0,banque=document.getElementById('fb').value.trim();
   const te=document.querySelector('#shb .chip.on'),type=te?te.dataset.type:'compte';
   if(!nom)return;
-  if(eid!==null){const a=D.patrimoine.current[section],i=a.findIndex(x=>x.id===eid);if(i>=0)a[i]={...a[i],nom,valeur,banque,type};}
-  else D.patrimoine.current[section].push({id:nid(),nom,valeur,banque,type});
-  D.patrimoine.snapshots['2026-05']=JSON.parse(JSON.stringify(D.patrimoine.current));
+  const data=getED();if(!data)return;
+  if(eid!==null){const a=data[section],i=a.findIndex(x=>x.id===eid);if(i>=0)a[i]={...a[i],nom,valeur,banque,type};}
+  else data[section].push({id:nid(),nom,valeur,banque,type});
   sv();closeOv();renderP();
 }
 
-function exportData(){
-  const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='budget_botto_'+new Date().toISOString().slice(0,10)+'.json';a.click();
-}
-function importData(e){
-  const file=e.target.files[0];if(!file)return;
-  const r=new FileReader();
-  r.onload=ev=>{try{D=JSON.parse(ev.target.result);sv();render();}catch(err){alert('Fichier JSON invalide');}};
-  r.readAsText(file);e.target.value='';
-}
-render();
+function exportData(){const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='budget_botto_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
+function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);sv();render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
+
+updMDisp();render();
 </script>
 </body>
 </html>
