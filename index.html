@@ -789,7 +789,17 @@ function svP(section){
 function exportData(){const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='budget_botto_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
 function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);sv();render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
 
-updMDisp();render();
+// Au démarrage : ouvrir sur le premier mois non clos
+(function(){
+  const months=Object.keys(D.budgets).sort();
+  if(months.length===0){updMDisp();render();return;}
+  // Cherche le premier mois non clos
+  const nonClos=months.filter(k=>!D.budgets[k]._closed);
+  const target=nonClos.length>0?nonClos[nonClos.length-1]:months[months.length-1];
+  const[y,m]=target.split('-');
+  cm=parseInt(m)-1;cy=parseInt(y);
+  updMDisp();render();
+})();
 </script>
 </body>
 </html>
