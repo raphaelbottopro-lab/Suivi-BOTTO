@@ -319,7 +319,7 @@ function fmt(n){return parseFloat(n).toLocaleString('fr-FR',{minimumFractionDigi
 function fmk(n){return Math.round(n).toLocaleString('fr-FR')+' €';}
 function nid(){return++D.nextId;}
 function sk(m,y){return y+'-'+(m+1<10?'0':'')+(m+1);}
-function ta(s){if(!s)return 0;return[...s.comptes,...s.epargne,...s.immobilier].reduce((a,x)=>a+x.valeur,0);}
+function ta(s){if(!s)return 0;return[...s.epargne,...s.immobilier].reduce((a,x)=>a+x.valeur,0);}
 function ct(b){const c=b.courses;return c.semaines.filter(s=>s.reel!==null).reduce((a,x)=>a+x.reel,0)+c.semaines.filter(s=>s.reel===null).length*c.virementSem;}
 function sdot(s){const c=s==='Débité'||s==='Fait'?'#1D9E75':s==='En cours'?'#EF9F27':'#B4B2A9';return`<span class="sd" style="background:${c}"></span>`;}
 
@@ -575,7 +575,7 @@ function renderP(){
     renderMoyenne();renderPatrimChart(null);return;
   }
   const snap=res.data,status=res.status,isEd=(status==='current'||status==='draft'),isSnap=(status==='snapshot');
-  const tC=snap.comptes.reduce((a,x)=>a+x.valeur,0),tE=snap.epargne.reduce((a,x)=>a+x.valeur,0),tI=snap.immobilier.reduce((a,x)=>a+x.valeur,0),tP=snap.passifs.reduce((a,x)=>a+x.valeur,0),tA=tC+tE+tI,net=tA-tP;
+  const tC=snap.comptes.reduce((a,x)=>a+x.valeur,0),tE=snap.epargne.reduce((a,x)=>a+x.valeur,0),tI=snap.immobilier.reduce((a,x)=>a+x.valeur,0),tP=snap.passifs.reduce((a,x)=>a+x.valeur,0),tA=tE+tI,net=tA-tP;
   document.getElementById('pcpt').textContent=fmk(tC);document.getElementById('pepa').textContent=fmk(tE);document.getElementById('pimm').textContent=fmk(tI);document.getElementById('ppas').textContent=fmk(tP);
   const pn=document.getElementById('pnet');
   if(net<0){pn.textContent='−'+fmk(Math.abs(net));pn.className='ptv r';}else if(net>0){pn.textContent='+'+fmk(net);pn.className='ptv g';}else{pn.textContent='0 €';pn.className='ptv';}
@@ -652,49 +652,57 @@ function renderPatrimChart(snap){
   });
 }
 
+// État des accordéons moyennes par année
+const _moyOpen={};
+function toggleMoy(year){_moyOpen[year]=!_moyOpen[year];renderMoyenne();}
+
 function renderMoyenne(){
-  // Livrets disponibles depuis snapshots
   const allSnaps=D.patrimoine.snapshots;
-  const curYear=py;
-  const keys2026=Object.keys(allSnaps).filter(k=>k.startsWith(curYear+'-')).sort();
   const allKeys=Object.keys(allSnaps).sort();
-
-  function livretTotal(k){const s=allSnaps[k];if(!s)return null;return s.epargne.filter(x=>x.type==='livret'||x.type==='ldd').reduce((a,x)=>a+x.valeur,0);}
-
-  const deltas=[];
-  for(let i=0;i<keys2026.length;i++){
-    const k=keys2026[i],idx=allKeys.indexOf(k);
-    if(idx<=0)continue;
-    const pk=allKeys[idx-1],cur=livretTotal(k),prev=livretTotal(pk);
-    if(cur===null||prev===null)continue;
-    const[y,m]=k.split('-');
-    deltas.push({month:MN[parseInt(m)-1],year:parseInt(y),delta:cur-prev});
-  }
-
-  const mcard=document.getElementById('moy-card');
-  if(!deltas.length){mcard.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--tx2)">Pas assez de données pour calculer la moyenne.</div>';return;}
-
-  const total=deltas.reduce((a,d)=>a+d.delta,0);
-  const moy=total/deltas.length;
-  const moyCol=moy>=0?'#1D9E75':'#D85A30';
-  const totCol=total>=0?'#185FA5':'#D85A30';
   const fmtD=n=>{const r=Math.round(n);return(r>=0?'+':'')+r.toLocaleString('fr-FR')+' €';};
-
-  let h=`<div class="pr">
-    <div class="pi" style="background:#E1F5EE"><i class="ti ti-pig-money" style="color:#0F6E56"></i></div>
-    <div class="pn"><div class="pa">Moyenne mensuelle</div><div class="pb">Livret Jeune + LDD · ${curYear}</div></div>
-    <div class="pv" style="color:${moyCol};font-weight:500">${fmtD(moy)}</div>
-  </div>
-  <div class="pr">
-    <div class="pi" style="background:#E6F1FB"><i class="ti ti-trending-up" style="color:#185FA5"></i></div>
-    <div class="pn"><div class="pa">Total épargné</div><div class="pb">depuis janvier ${curYear}</div></div>
-    <div class="pv" style="color:${totCol};font-weight:500">${fmtD(total)}</div>
-  </div>`;
-  // Détail
-  deltas.forEach(d=>{
-    const c=d.delta>0?'#1D9E75':d.delta<0?'#D85A30':'var(--tx2)';
-    h+=`<div class="pr" style="border-bottom:.5px solid var(--bd1)"><div class="pn"><div class="pa" style="font-size:12px;color:var(--tx2)">${d.month} ${d.year}</div></div><div class="pv" style="color:${c};font-size:13px">${fmtD(d.delta)}</div></div>`;
-  });
+  function livretTotal(k){const s=allSnaps[k];if(!s)return null;return s.epargne.filter(x=>x.type==='livret'||x.type==='ldd').reduce((a,x)=>a+x.valeur,0);}
+  function calcDeltas(year){
+    const ks=allKeys.filter(k=>k.startsWith(year+'-'));
+    const result=[];
+    for(let i=0;i<ks.length;i++){
+      const k=ks[i],idx=allKeys.indexOf(k);if(idx<=0)continue;
+      const pk=allKeys[idx-1],cur=livretTotal(k),prev=livretTotal(pk);
+      if(cur===null||prev===null)continue;
+      const[,m]=k.split('-');
+      result.push({month:MN[parseInt(m)-1],delta:cur-prev});
+    }
+    return result;
+  }
+  function renderYear(deltas,year,label,isCurrentYear){
+    if(!deltas.length)return'';
+    const total=deltas.reduce((a,d)=>a+d.delta,0),moy=total/deltas.length;
+    const moyCol=moy>=0?'#1D9E75':'#D85A30',totCol=total>=0?'#185FA5':'#D85A30';
+    // Année en cours : ouverte par défaut ; années passées : fermées par défaut
+    if(_moyOpen[year]===undefined)_moyOpen[year]=isCurrentYear;
+    const isOpen=_moyOpen[year];
+    const chevron=`<i class="ti ti-chevron-down" style="font-size:16px;color:var(--tx2);transition:transform .2s;transform:rotate(${isOpen?'180':'0'}deg)"></i>`;
+    let h=`<div style="display:flex;align-items:center;justify-content:space-between;padding:13px;cursor:pointer;border-bottom:.5px solid var(--bd1)" onclick="toggleMoy(${year})">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="pi" style="background:#E1F5EE"><i class="ti ti-pig-money" style="color:#0F6E56"></i></div>
+        <div><div style="font-size:14px;font-weight:500;color:var(--tx1)">Livrets ${year}</div>
+        <div style="font-size:11px;color:var(--tx2)">Livret Jeune + LDD</div></div>
+      </div>
+      ${chevron}
+    </div>`;
+    if(isOpen){
+      h+=`<div class="pr"><div class="pi" style="background:#E1F5EE"><i class="ti ti-pig-money" style="color:#0F6E56"></i></div><div class="pn"><div class="pa">Moyenne mensuelle</div><div class="pb">Livret Jeune + LDD · ${year}</div></div><div class="pv" style="color:${moyCol};font-weight:500">${fmtD(moy)}</div></div>`;
+      h+=`<div class="pr"><div class="pi" style="background:#E6F1FB"><i class="ti ti-trending-up" style="color:#185FA5"></i></div><div class="pn"><div class="pa">Total épargné</div><div class="pb">${label}</div></div><div class="pv" style="color:${totCol};font-weight:500">${fmtD(total)}</div></div>`;
+      deltas.forEach(d=>{const c=d.delta>0?'#1D9E75':d.delta<0?'#D85A30':'var(--tx2)';h+=`<div class="pr" style="border-bottom:.5px solid var(--bd1)"><div class="pn"><div class="pa" style="font-size:12px;color:var(--tx2)">${d.month}</div></div><div class="pv" style="color:${c};font-size:13px">${fmtD(d.delta)}</div></div>`;});
+    }
+    return h;
+  }
+  const mcard=document.getElementById('moy-card');
+  const curYear=py,prevYear=curYear-1;
+  const dCur=calcDeltas(curYear),dPrev=calcDeltas(prevYear);
+  if(!dCur.length&&!dPrev.length){mcard.innerHTML='<div style="padding:16px;text-align:center;font-size:12px;color:var(--tx2)">Pas assez de données.</div>';return;}
+  let h='';
+  if(dPrev.length)h+=renderYear(dPrev,prevYear,'sur '+prevYear,false);
+  h+=renderYear(dCur,curYear,'depuis jan. '+curYear,true);
   mcard.innerHTML=h;
 }
 
@@ -727,7 +735,7 @@ function selChip(el){el.closest('.chips').querySelectorAll('.chip').forEach(c=>c
 
 function bForm(item,section){
   const cat=CATS.find(c=>c.key===section)||{};
-  const sts=['Débité','En cours','Planifié','Fait','Virement fait'],cpts=['CM','Bourso'];
+  const sts=['Débité','En cours','Planifié','Fait','Virement fait'],cpts=['CM','Bourso','Espèces'];
   const cats={revenus:'Revenu',charges:'Charge fixe',abonnements:'Abonnement',epargne:'Épargne',plaisirs:'Plaisirs & Autres'};
   const cOpts=cpts.map(c=>`<option ${item&&item.compte===c?'selected':''}>${c}</option>`).join('');
   const cChips=Object.entries(cats).map(([k,v])=>`<div class="chip${section===k?' on':''}" onclick="selChip(this)" data-cat="${k}">${v}</div>`).join('');
@@ -789,15 +797,21 @@ function svP(section){
 function exportData(){const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='budget_botto_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
 function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);sv();render();}catch(err){alert('Fichier JSON invalide');}};r.readAsText(file);e.target.value='';}
 
-// Au démarrage : ouvrir sur le premier mois non clos
+// Au démarrage : budget sur premier mois non clos, patrimoine sur dernier snapshot figé
 (function(){
-  const months=Object.keys(D.budgets).sort();
-  if(months.length===0){updMDisp();render();return;}
-  // Cherche le premier mois non clos
-  const nonClos=months.filter(k=>!D.budgets[k]._closed);
-  const target=nonClos.length>0?nonClos[nonClos.length-1]:months[months.length-1];
-  const[y,m]=target.split('-');
-  cm=parseInt(m)-1;cy=parseInt(y);
+  const bMonths=Object.keys(D.budgets).sort();
+  if(bMonths.length>0){
+    const nonClos=bMonths.filter(k=>!D.budgets[k]._closed);
+    const target=nonClos.length>0?nonClos[nonClos.length-1]:bMonths[bMonths.length-1];
+    const[by,bm]=target.split('-');
+    cm=parseInt(bm)-1;cy=parseInt(by);
+  }
+  const snapKeys=Object.keys(D.patrimoine.snapshots).sort();
+  if(snapKeys.length>0){
+    const last=snapKeys[snapKeys.length-1];
+    const[py2,pm2]=last.split('-');
+    pm=parseInt(pm2)-1;py=parseInt(py2);
+  }
   updMDisp();render();
 })();
 </script>
