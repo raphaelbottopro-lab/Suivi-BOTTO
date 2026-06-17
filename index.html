@@ -823,15 +823,18 @@ function importData(e){const file=e.target.files[0];if(!file)return;const r=new 
     const[by,bm]=target.split('-');
     cm=parseInt(bm)-1;cy=parseInt(by);
   }
-  // Patrimoine : dernier snapshot figé OU editingMonth si pas de snapshot
-  const snapKeys=Object.keys(D.patrimoine.snapshots).sort();
-  if(snapKeys.length>0){
-    const last=snapKeys[snapKeys.length-1];
-    const[py2,pm2]=last.split('-');
-    pm=parseInt(pm2)-1;py=parseInt(py2);
-  } else {
-    const em=D.patrimoine.editingMonth;
-    if(em){const[py2,pm2]=em.split('-');pm=parseInt(pm2)-1;py=parseInt(py2);}
+  // Patrimoine : ouvrir sur le mois le plus récent parmi snapshots + drafts + editingMonth
+  {
+    const allPM=new Set();
+    Object.keys(D.patrimoine.snapshots).forEach(k=>allPM.add(k));
+    Object.keys(D.patrimoine.drafts||{}).forEach(k=>allPM.add(k));
+    if(D.patrimoine.editingMonth)allPM.add(D.patrimoine.editingMonth);
+    const sorted=[...allPM].sort();
+    if(sorted.length>0){
+      const last=sorted[sorted.length-1];
+      const[py2,pm2]=last.split('-');
+      pm=parseInt(pm2)-1;py=parseInt(py2);
+    }
   }
   updMDisp();render();
 })();
