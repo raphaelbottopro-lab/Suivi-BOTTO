@@ -344,9 +344,24 @@ function chgMonth(d){
   if(!D.budgets[bk(p.m,p.y)])return;
   cm=p.m;cy=p.y;updMDisp();renderB();
 }
+function getAllPMSorted(){return getAllPM().sort();}
 function chgPM(d){
-  let nm=pm+d,ny=py;if(nm>11){nm=0;ny++;}if(nm<0){nm=11;ny--;}
-  pm=nm;py=ny;
+  const all=getAllPMSorted();
+  // Ajoute le mois suivant le dernier comme destination possible
+  if(all.length>0){
+    const last=all[all.length-1];
+    const[ly,lm]=last.split('-');
+    let nm2=parseInt(lm),ny2=parseInt(ly);
+    nm2++;if(nm2>12){nm2=1;ny2++;}
+    const nextKey=ny2+'-'+(nm2<10?'0':'')+nm2;
+    if(!all.includes(nextKey))all.push(nextKey);
+  }
+  const cur=sk(pm,py);
+  const idx=all.indexOf(cur);
+  const newIdx=idx+d;
+  if(newIdx<0||newIdx>=all.length)return;
+  const[ny,nm]=all[newIdx].split('-');
+  pm=parseInt(nm)-1;py=parseInt(ny);
   document.getElementById('pmd').innerHTML=MN[pm]+' '+py+' <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i>';
   renderP();
 }
@@ -511,22 +526,24 @@ function renderB(){
   document.getElementById('bact').innerHTML=acts;
 
   // Graphique budget
-  const charges=b.charges.reduce((a,x)=>a+x.montant,0)+b.abonnements.reduce((a,x)=>a+x.montant,0)+ct(b);
-  const epa=b.epargne.reduce((a,x)=>a+x.montant,0);
-  const plais=b.plaisirs.reduce((a,x)=>a+x.montant,0);
-  const tot=charges+epa+plais;
-  const BCOLS=['#1D9E75','#185FA5','#D85A30'];
-  const BLBLS=['Charges & abonnements','Épargne','Plaisirs & Autres'];
-  const BVALS=[charges,epa,plais];
-  document.getElementById('btot').textContent=fmk(tot);
-  const bleg=document.getElementById('bleg');
-  bleg.innerHTML=BLBLS.map((l,i)=>`<span class="leg-item"><span class="leg-dot" style="background:${BCOLS[i]}"></span><span style="color:var(--tx2)">${l} <strong style="color:var(--tx1)">${tot>0?Math.round(BVALS[i]/tot*100):0}%</strong></span></span>`).join('');
-  if(bChart)bChart.destroy();
-  bChart=new Chart(document.getElementById('budgetPie'),{
-    type:'doughnut',
-    data:{labels:BLBLS,datasets:[{data:BVALS,backgroundColor:BCOLS,borderColor:'transparent',borderWidth:0,hoverOffset:6}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>{const v=ctx.raw,p=tot>0?Math.round(v/tot*100):0;return ` ${fmk(v)} · ${p}%`;}}}}}
-  });
+   // Graphique budget
+   const charg=b.charges.reduce((a,x)=>a+x.montant,0)+ct(b);
+   const abos=b.abonnements.reduce((a,x)=>a+x.montant,0);
+   const epa=b.epargne.reduce((a,x)=>a+x.montant,0);
+   const plais=b.plaisirs.reduce((a,x)=>a+x.montant,0);
+   const tot=charg+abos+epa+plais;
+   const BCOLS=['#1D9E75','#9B59B6','#185FA5','#D85A30'];
+   const BLBLS=['Charges & courses','Abonnements','Épargne','Plaisirs & Autres'];
+   const BVALS=[charg,abos,epa,plais];
+   document.getElementById('btot').textContent=fmk(tot);
+   const bleg=document.getElementById('bleg');
+   bleg.innerHTML=BLBLS.map((l,i)=>`<span class="leg-item"><span class="leg-dot" style="background:${BCOLS[i]}"></span><span style="color:var(--tx2)">${l} <strong style="color:var(--tx1)">${tot>0?Math.round(BVALS[i]/tot*100):0}%</strong></span></span>`).join('');
+   if(bChart)bChart.destroy();
+   bChart=new Chart(document.getElementById('budgetPie'),{
+     type:'doughnut',
+     data:{labels:BLBLS,datasets:[{data:BVALS,backgroundColor:BCOLS,borderColor:'transparent',borderWidth:0,hoverOffset:6}]},
+     options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>{const v=ctx.raw,p=tot>0?Math.round(v/tot*100):0;return ` ${fmk(v)} · ${p}%`;}}}}}
+   });
 }
 
 function osE(i){
@@ -806,11 +823,15 @@ function importData(e){const file=e.target.files[0];if(!file)return;const r=new 
     const[by,bm]=target.split('-');
     cm=parseInt(bm)-1;cy=parseInt(by);
   }
+  // Patrimoine : dernier snapshot figé OU editingMonth si pas de snapshot
   const snapKeys=Object.keys(D.patrimoine.snapshots).sort();
   if(snapKeys.length>0){
     const last=snapKeys[snapKeys.length-1];
     const[py2,pm2]=last.split('-');
     pm=parseInt(pm2)-1;py=parseInt(py2);
+  } else {
+    const em=D.patrimoine.editingMonth;
+    if(em){const[py2,pm2]=em.split('-');pm=parseInt(pm2)-1;py=parseInt(py2);}
   }
   updMDisp();render();
 })();
