@@ -621,6 +621,7 @@ function createDraft(){
 function getED(){const k=sk(pm,py);if(k===D.patrimoine.editingMonth)return D.patrimoine.current;if(D.patrimoine.drafts[k])return D.patrimoine.drafts[k];return null;}
 
 function renderP(){
+  document.getElementById('pmd').innerHTML=MN[pm]+' '+py+' <i class="ti ti-calendar" style="font-size:14px;vertical-align:-1px"></i>';
   const res=gpd(),prev=gppd();
   if(!res){
     document.getElementById('pnet').textContent='—';document.getElementById('pnet').className='ptv';
