@@ -600,7 +600,18 @@ function svSnap(){
   let d;if(k===D.patrimoine.editingMonth)d=JSON.parse(JSON.stringify(D.patrimoine.current));
   else if(D.patrimoine.drafts[k])d=JSON.parse(JSON.stringify(D.patrimoine.drafts[k]));
   else return;
-  D.patrimoine.snapshots[k]=d;delete D.patrimoine.drafts[k];sv();renderP();
+  D.patrimoine.snapshots[k]=d;delete D.patrimoine.drafts[k];
+  // Si on vient de figer le mois "current", on avance editingMonth au mois suivant
+  // et on copie les valeurs fraîchement figées dans current pour que le mois suivant
+  // parte des bonnes valeurs (et non d'anciennes données obsolètes)
+  if(k===D.patrimoine.editingMonth){
+    const[y,m]=k.split('-');
+    let nm=parseInt(m)+1,ny=parseInt(y);
+    if(nm>12){nm=1;ny++;}
+    D.patrimoine.editingMonth=ny+'-'+(nm<10?'0':'')+nm;
+    D.patrimoine.current=JSON.parse(JSON.stringify(d));
+  }
+  sv();renderP();
 }
 function createDraft(){
   const k=sk(pm,py),ks=Object.keys(D.patrimoine.snapshots).sort();
@@ -852,16 +863,16 @@ function importData(e){const file=e.target.files[0];if(!file)return;const r=new 
     const[by,bm]=target.split('-');
     cm=parseInt(bm)-1;cy=parseInt(by);
   }
-  // Patrimoine : ouvrir sur le mois le plus récent parmi snapshots + drafts + editingMonth
+  // Patrimoine : toujours ouvrir sur le dernier mois FIGÉ (snapshot)
   {
-    const allPM=new Set();
-    Object.keys(D.patrimoine.snapshots).forEach(k=>allPM.add(k));
-    Object.keys(D.patrimoine.drafts||{}).forEach(k=>allPM.add(k));
-    if(D.patrimoine.editingMonth)allPM.add(D.patrimoine.editingMonth);
-    const sorted=[...allPM].sort();
-    if(sorted.length>0){
-      const last=sorted[sorted.length-1];
+    const snapKeys=Object.keys(D.patrimoine.snapshots).sort();
+    if(snapKeys.length>0){
+      const last=snapKeys[snapKeys.length-1];
       const[py2,pm2]=last.split('-');
+      pm=parseInt(pm2)-1;py=parseInt(py2);
+    } else if(D.patrimoine.editingMonth){
+      // Aucun snapshot encore : on ouvre sur le mois en cours d'édition
+      const[py2,pm2]=D.patrimoine.editingMonth.split('-');
       pm=parseInt(pm2)-1;py=parseInt(py2);
     }
   }
